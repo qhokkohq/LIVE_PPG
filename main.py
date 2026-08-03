@@ -18,20 +18,20 @@ SAMPLE_FREQ = 50
 TIME_WINDOW = 60
 OUTPUT_DIR = 'captured data'
 
-# MODE = 'REPLAY'
-MODE = 'LIVE'
+MODE = 'REPLAY'
+# MODE = 'LIVE'
 
 REPLAY_CSV = Path(r"C:\BORING\RESEARCH\MEASUREMENTS\NEW DATA 2026\PYTHON\captured_data\ppg_raw_20260730_171457.csv")
 
 def main():
 
     if MODE == 'LIVE':
-        serial = SerialManager(SERIAL_PORT, BAUD_RATE)
+        data_source = SerialManager(SERIAL_PORT, BAUD_RATE)
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         title = f"PPG_{timestamp}"
         filepath = f'{OUTPUT_DIR}/ppg_{timestamp}.csv'
     else:
-        serial = ReplayManager(REPLAY_CSV, realtime=False)
+        data_source = ReplayManager(REPLAY_CSV, realtime=False)
         title = REPLAY_CSV.stem
         filepath = f'{OUTPUT_DIR}/{title}.csv'
 
@@ -50,7 +50,7 @@ def main():
         output_dir=OUTPUT_DIR,
         time_window=TIME_WINDOW,
         processor=processor,
-        serial_manager=serial,
+        data_source=data_source,
         recorder=recorder,
         live_data=live_data,
         estimator=estimator,
