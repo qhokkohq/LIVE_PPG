@@ -13,13 +13,16 @@ import matplotlib
 matplotlib.use("TkAgg")
 
 SERIAL_PORT = "COM5"
-BAUD_RATE = 500000
+BAUD_RATE = 115200
 SAMPLE_FREQ = 50
 TIME_WINDOW = 60
 OUTPUT_DIR = 'captured data'
 
-MODE = 'REPLAY'
-# MODE = 'LIVE'
+EPS_DATA = 'zij' # 'prahl'
+L_RATIO = None
+
+# MODE = 'REPLAY'
+MODE = 'LIVE'
 
 REPLAY_CSV = Path(r"C:\BORING\RESEARCH\MEASUREMENTS\NEW DATA 2026\PYTHON\captured_data\ppg_raw_20260730_171457.csv")
 
@@ -29,7 +32,7 @@ def main():
         data_source = SerialManager(SERIAL_PORT, BAUD_RATE)
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         title = f"PPG_{timestamp}"
-        filepath = f'{OUTPUT_DIR}/ppg_{timestamp}.csv'
+        filepath = f'{OUTPUT_DIR}/PPG_{timestamp}.csv'
     else:
         data_source = ReplayManager(REPLAY_CSV, realtime=False)
         title = REPLAY_CSV.stem
@@ -37,11 +40,11 @@ def main():
 
     recorder = Recorder()
 
-    live_data = LiveData(SAMPLE_FREQ, TIME_WINDOW)
+    live_data = LiveData(fs=SAMPLE_FREQ, window_seconds=TIME_WINDOW)
 
-    processor = SignalProcessor(SAMPLE_FREQ)
+    processor = SignalProcessor(fs=SAMPLE_FREQ)
 
-    estimator = SpO2Estimator(SAMPLE_FREQ)
+    estimator = SpO2Estimator(fs=SAMPLE_FREQ, l_ratio=L_RATIO, eps_data=EPS_DATA)
 
     # Plotter
     plotter = Plotter(
@@ -60,8 +63,8 @@ def main():
         plotter.run()
 
     finally:
-        recorder.save(filepath)
-        serial.close()
+        recorder.save(filepath, l_ratio=L_RATIO, eps_data=EPS_DATA)
+        data_source.close()
 
 
 if __name__ == "__main__":

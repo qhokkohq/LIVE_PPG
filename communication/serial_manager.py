@@ -102,8 +102,6 @@ class SerialManager:
             # Decode packet
             time_red_us, tia_red, time_ir_us, tia_ir = DATA_STRUCT.unpack(payload)
 
-            print(time_red_us, tia_red, time_ir_us, tia_ir)
-
             packet = DataPacket(time_red_us, tia_red, time_ir_us, tia_ir)
 
             self.data_packet_queue.put(packet)

@@ -18,7 +18,7 @@ class SpO2Estimator:
     - displayed value is an average of the 8 recent estimates
     """
 
-    def __init__(self, fs):
+    def __init__(self, fs, l_ratio, eps_data):
 
         self.fs = fs
 
@@ -33,6 +33,9 @@ class SpO2Estimator:
         self.current_hr = 75.0
         self.current_spo2 = None
         self.display_spo2 = None
+        
+        self.l_ratio = l_ratio
+        self.eps_data = eps_data
 
     def reset(self):
         self.filtered.clear()
@@ -108,7 +111,7 @@ class SpO2Estimator:
 
         acdc_red = np.mean(red_ppg.acdc.v)
         acdc_ir = np.mean(ir_ppg.acdc.v)
-        spo2_v = spo2_formula(acdc_red, acdc_ir)
+        spo2_v = spo2_formula(acdc_red, acdc_ir, l_ratio=self.l_ratio, eps_data=self.eps_data)
 
         if len(red_ppg.peaks.t) >= 2:
             ibi = np.mean(np.diff(red_ppg.peaks.t))

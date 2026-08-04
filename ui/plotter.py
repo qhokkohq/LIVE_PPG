@@ -17,10 +17,10 @@ class Plotter:
         self.live_data = live_data
         self.estimator = estimator
         
-        if self.data_source.start():
-            self.data_source.start_reader() 
-            self.is_running = True
-            print("Recording started.")
+        # if self.data_source.start():
+        #     self.data_source.start_reader() 
+        #     self.is_running = True
+        #     print("Recording started.")
 
         self.is_running = False
 
@@ -76,7 +76,8 @@ class Plotter:
 
         self.red_line, = self.ax_red.plot([], [], color="red", label="Red (660nm)")
         self.ir_line, = self.ax_ir.plot([], [], color="black", label="IR (880nm)")
-        self.spo2_line, = self.ax_spo2.plot([], [], color="blue", label="Calculated SpO2")
+        self.spo2_line, = self.ax_spo2.plot([], [], color="blue", 
+                                            label=f"Calculated SpO2 ({self.estimator.eps_data}, l2/l1={self.estimator.l_ratio})")
 
         self.ax_red.set_ylim(self.y_min, self.y_max)
         self.ax_red.set_xlabel("Time (s)")
@@ -103,11 +104,11 @@ class Plotter:
         )
 
     def run(self):
-        # redraw every 0.2 s
+        # redraw every 0.1 s
         self.animation = animation.FuncAnimation(
             self.fig,
             self.update_plot,
-            interval=200, 
+            interval=100, 
             cache_frame_data=False,
         )
 
@@ -130,9 +131,7 @@ class Plotter:
         return self.red_line, self.ir_line, self.spo2_line
 
     def process_packet(self, packet):
-        # print('process packet')
         self.recorder.append(packet)
-        # print(packet.time_red_us)
         filtered_packet = self.processor.update(packet)
 
         if filtered_packet is None:

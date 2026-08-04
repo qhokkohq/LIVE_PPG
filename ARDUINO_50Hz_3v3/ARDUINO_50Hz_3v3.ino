@@ -1,4 +1,4 @@
-const unsigned long BAUD = 500000; 
+const unsigned long BAUD = 115200; 
 
 // ---------- Pin definitions ----------
 const int RED_LED = 5; // yellow
@@ -41,8 +41,12 @@ void setup()
 {
     Serial.begin(BAUD);
 
+    delay(1000);
     // need to connect AREF to 3.3V
     analogReference(EXTERNAL);
+
+    pinMode(RED_LED, OUTPUT);
+    pinMode(IR_LED, OUTPUT);
 
     digitalWrite(RED_LED, LOW);
     digitalWrite(IR_LED, LOW);
@@ -64,14 +68,12 @@ void loop()
 
             digitalWrite(RED_LED, LOW);
             digitalWrite(IR_LED, LOW);
-            delayMicroseconds(LED_PERIOD);
+            delay(1000);
 
             dark = analogRead(TIA_PIN);
 
             start_time = micros(); // Reset timestamps
             Serial.write(START_PACKET);
-
-            return;
         }
         else if (cmd == STOP_CMD)
         {
@@ -79,14 +81,14 @@ void loop()
 
             Serial.write(END_PACKET);   // Acknowledge stop
 
-            return;
+            digitalWrite(RED_LED, LOW);
+            digitalWrite(IR_LED, LOW);
+            delay(1000);
         }
-    
-
-        if (!recording)
-        {
-            return;
-        }
+    }
+    if (!recording)
+    {
+        return;
     }
 
     int16_t tia_red;
@@ -106,6 +108,8 @@ void loop()
     tia_red = analogRead(TIA_PIN) - dark;
 
     while (micros() - t0 < LED_PERIOD);
+    
+    digitalWrite(RED_LED, LOW);
 
     //================ IR =================//
 
@@ -125,7 +129,6 @@ void loop()
     digitalWrite(IR_LED, LOW);
 
     //================ SEND =================//
-
     s.time_red_us = timestamp_red;
     s.tia_red = tia_red;
     s.time_ir_us = timestamp_ir;

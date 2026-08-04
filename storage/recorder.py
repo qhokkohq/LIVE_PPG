@@ -34,14 +34,18 @@ class Recorder:
     def _(self, packet: SpO2Packet):
         self.spo2_packets.append(packet)
 
-    def save(self, filepath):
+    def save(self, filepath, l_ratio, eps_data):
         if not self.raw_packets:
             print("No data was collected. Skipping CSV export.")
             return False
 
         raw_file = self.create_specialised_filepath(Path(filepath), 'raw')
         filtered_file = self.create_specialised_filepath(Path(filepath), 'filtered')
-        spo2_file = self.create_specialised_filepath(Path(filepath), 'spo2')
+        
+        if l_ratio is None:
+            l_ratio = 0.7128
+            
+        spo2_file = self.create_specialised_filepath(Path(filepath), f'spo2_{eps_data}_l2l1={str(l_ratio)}')
 
         print(f"Saving {len(self.raw_packets)} samples to {raw_file}...")
         self.save_dataclass_list(raw_file, self.raw_packets)
