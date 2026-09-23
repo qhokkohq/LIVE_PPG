@@ -35,6 +35,8 @@ class ReplayManager:
 
         self.df = pd.read_csv(self.csv_path)
         self.rows = list(self.df.itertuples(index=False))
+        print(self.rows[0])
+        print(self.rows[0]._fields)
 
         self.index = 0
 
@@ -85,8 +87,8 @@ class ReplayManager:
                 prev = self.rows[self.index - 1]
 
                 dt = (
-                    int(row.Time_red_us)
-                    - int(prev.Time_red_us)
+                    row.time_red_us
+                    - prev.time_red_us
                 ) / 1e6
 
                 if dt > 0:
@@ -112,10 +114,10 @@ class ReplayManager:
             # -------------------------------------------------
 
             packet = DataPacket(
-                time_red_us=int(row.Time_red_us),
-                red=int(row.tia_red),
-                time_ir_us=int(row.Time_ir_us),
-                ir=int(row.tia_ir),
+                time_red_us=int(row.time_red_us),
+                red=int(row.red),
+                time_ir_us=int(row.time_ir_us),
+                ir=int(row.ir),
             )
 
             # -------------------------------------------------

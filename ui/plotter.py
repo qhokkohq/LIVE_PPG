@@ -5,22 +5,17 @@ import matplotlib
 
 class Plotter:
 
-    def __init__(self, mode, title, output_dir, time_window, processor, data_source, recorder, live_data, estimator):
+    def __init__(self, mode, title, output_dir, time_window, processor, serial_manager, recorder, live_data, estimator):
 
         self.mode = mode
         self.title = title
         self.output_dir = output_dir
         self.time_window = time_window
         self.processor = processor
-        self.data_source = data_source
+        self.serial_manager = serial_manager
         self.recorder = recorder
         self.live_data = live_data
         self.estimator = estimator
-        
-        # if self.data_source.start():
-        #     self.data_source.start_reader() 
-        #     self.is_running = True
-        #     print("Recording started.")
 
         self.is_running = False
 
@@ -37,13 +32,13 @@ class Plotter:
         self.processor.reset()
         self.estimator.reset()
 
-        self.data_source.stop_reader()
-        self.data_source.clear_queue()
+        self.serial_manager.stop_reader()
+        self.serial_manager.clear_queue()
 
         # Start Arduino
-        if self.data_source.start():
+        if self.serial_manager.start():
 
-            self.data_source.start_reader()
+            self.serial_manager.start_reader()
 
             self.is_running = True
 
@@ -53,9 +48,9 @@ class Plotter:
 
         print("Stopping...")
 
-        self.data_source.stop_reader()
+        self.serial_manager.stop_reader()
 
-        if self.data_source.stop():
+        if self.serial_manager.stop():
 
             print("serial stopped")
 
@@ -76,8 +71,7 @@ class Plotter:
 
         self.red_line, = self.ax_red.plot([], [], color="red", label="Red (660nm)")
         self.ir_line, = self.ax_ir.plot([], [], color="black", label="IR (880nm)")
-        self.spo2_line, = self.ax_spo2.plot([], [], color="blue", 
-                                            label=f"Calculated SpO2 ({self.estimator.eps_data}, l2/l1={self.estimator.l_ratio})")
+        self.spo2_line, = self.ax_spo2.plot([], [], color="blue", label=f"Calculated SpO2")
 
         self.ax_red.set_ylim(self.y_min, self.y_max)
         self.ax_red.set_xlabel("Time (s)")
@@ -121,7 +115,7 @@ class Plotter:
         if not self.is_running:
             return
 
-        packets = self.data_source.get_packets()
+        packets = self.serial_manager.get_packets()
 
         for packet in packets:
             self.process_packet(packet)
@@ -140,7 +134,7 @@ class Plotter:
         self.recorder.append(filtered_packet)
         self.live_data.append(filtered_packet)
         
-        result = self.estimator.update(filtered_packet)
+        result = self.estimator.update(packet)
 
         if result is not None:
 
@@ -153,21 +147,10 @@ class Plotter:
                 self.live_data.append(display_spo2_packet)
 
     def redraw(self):
-        # print('redraw')
-        self.red_line.set_data(
-            self.live_data.t_red,
-            self.live_data.red_full,
-        )
-
-        self.ir_line.set_data(
-            self.live_data.t_ir,
-            self.live_data.ir_full,
-        )
-
-        self.spo2_line.set_data(
-            self.live_data.spo2_t,
-            self.live_data.spo2_v,
-        )
+        
+        self.red_line.set_data(self.live_data.t_red, self.live_data.red_full)
+        self.ir_line.set_data(self.live_data.t_ir, self.live_data.ir_full)
+        self.spo2_line.set_data(self.live_data.spo2_t, self.live_data.spo2_v)
 
         self.update_axes()
 
@@ -207,8 +190,6 @@ class Plotter:
 
             if self.is_running:
                 self.stop()
-
-    
 
     @staticmethod
     def autoscale(ax, y):

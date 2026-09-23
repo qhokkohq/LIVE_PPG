@@ -1,42 +1,37 @@
 from communication.serial_manager import SerialManager
-from communication.replay_manager import ReplayManager
 from storage.recorder import Recorder
 
 from ui.live_data import LiveData
 from ui.plotter import Plotter
 from processing.signal_processor import SignalProcessor
 from processing.spo2_estimator import SpO2Estimator
-
+from communication.packets import DataPacket
+import numpy as np
 from utils.utils import *
 import time
+import matplotlib.pyplot as plt
+import pandas as pd 
+from pathlib import Path
+
+# from offline_analysis import plot_saved_csv
+
 import matplotlib
 matplotlib.use("TkAgg")
 
 SERIAL_PORT = "COM5"
 BAUD_RATE = 115200
-SAMPLE_FREQ = 50
-TIME_WINDOW = 60
-OUTPUT_DIR = 'captured data'
+SAMPLE_FREQ = 200
+TIME_WINDOW = 30
+OUTPUT_DIR = r"C:\BORING\RESEARCH\MEASUREMENTS\NEW DATA 2026\BLOOD PRESSURE ESTIMATION\RAW DATA SEP 2026"
+Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
-EPS_DATA = 'zij' # 'prahl'
-L_RATIO = None
-
-# MODE = 'REPLAY'
 MODE = 'LIVE'
-
-REPLAY_CSV = Path(r"C:\BORING\RESEARCH\MEASUREMENTS\NEW DATA 2026\PYTHON\captured_data\ppg_raw_20260730_171457.csv")
-
 def main():
-
-    if MODE == 'LIVE':
-        data_source = SerialManager(SERIAL_PORT, BAUD_RATE)
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        title = f"PPG_{timestamp}"
-        filepath = f'{OUTPUT_DIR}/PPG_{timestamp}.csv'
-    else:
-        data_source = ReplayManager(REPLAY_CSV, realtime=False)
-        title = REPLAY_CSV.stem
-        filepath = f'{OUTPUT_DIR}/{title}.csv'
+    save_raw = True
+    serial_manager = SerialManager(SERIAL_PORT, BAUD_RATE)
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    title = f"{timestamp}"
+    filepath = f'{OUTPUT_DIR}/{timestamp}_raw.csv'
 
     recorder = Recorder()
 
@@ -44,7 +39,7 @@ def main():
 
     processor = SignalProcessor(fs=SAMPLE_FREQ)
 
-    estimator = SpO2Estimator(fs=SAMPLE_FREQ, l_ratio=L_RATIO, eps_data=EPS_DATA)
+    estimator = SpO2Estimator(fs=SAMPLE_FREQ)
 
     # Plotter
     plotter = Plotter(
@@ -53,7 +48,7 @@ def main():
         output_dir=OUTPUT_DIR,
         time_window=TIME_WINDOW,
         processor=processor,
-        data_source=data_source,
+        serial_manager=serial_manager,
         recorder=recorder,
         live_data=live_data,
         estimator=estimator,
@@ -63,9 +58,8 @@ def main():
         plotter.run()
 
     finally:
-        recorder.save(filepath, l_ratio=L_RATIO, eps_data=EPS_DATA)
-        data_source.close()
-
+        raw_df, spo2_df = recorder.save(filepath, save_spo2=False, save_raw=True)
+        serial_manager.close()
 
 if __name__ == "__main__":
     main()

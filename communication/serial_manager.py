@@ -142,10 +142,6 @@ class SerialManager:
 
         return packets
 
-    # ---------------------------------------------------------
-    # START / STOP COMMANDS
-    # ---------------------------------------------------------
-
     def start(self):
 
         self.ser.write(START_CMD)
@@ -198,10 +194,6 @@ class SerialManager:
                     return True
 
         return False
-
-    # ---------------------------------------------------------
-    # CLOSE
-    # ---------------------------------------------------------
 
     def close(self):
 

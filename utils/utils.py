@@ -1,5 +1,16 @@
 from pathlib import Path
 import time
+import pandas as pd 
+
+def clean_raw_arduino_df(df):
+    time0 = min(df["time_red_us"].iloc[0], df["time_ir_us"].iloc[0])
+    df["t_red"] = (df["time_red_us"] - time0) / 1e6
+    df["t_ir"] = (df["time_ir_us"] - time0) / 1e6
+
+    df = df.drop(columns=['time_red_us'])
+    df = df.drop(columns=['time_ir_us'])
+    df = df[['t_red', 'red', 't_ir', 'ir']]
+    return df
 
 def create_timestamp() -> str:
     return time.strftime("%Y%m%d_%H%M%S")

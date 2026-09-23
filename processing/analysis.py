@@ -4,8 +4,13 @@ import numpy as np
 from models.time_series import TimeSeries
 from models.ppg_data import PPGData
 
+from scipy.signal import filtfilt, butter
 
-def analyse_ppg(time, i_full, i_ac):
+def analyse_ppg(time, signal, fs):
+    
+    i_full = butter_ppg(signal, fs, 'lowpass')
+    i_ac = butter_ppg(signal, fs, 'bandpass')
+        
     # DETECT PEAKS
     signal_data = TimeSeries(time, i_full)
 
@@ -15,6 +20,8 @@ def analyse_ppg(time, i_full, i_ac):
     if len(peaks_idx) < 2 or len(valleys_idx) < 2:
         return None
 
+    # cannot do this when using lfilt (causal)
+    # this is ok when using filtfilt
     peak_data = TimeSeries(time[peaks_idx], i_full[peaks_idx])
     valley_data = TimeSeries(time[valleys_idx], i_full[valleys_idx])
 
@@ -65,7 +72,6 @@ def validate_interp_pairs(interp_data, valley_data):
 
     return interp_data, valley_data
 
-
 def get_peak_indices(v_ac, time):
     dt = np.mean(np.diff(time))
 
@@ -92,78 +98,55 @@ def get_peak_indices(v_ac, time):
     return peaks_idx
 
 
-def spo2_formula(acdc1, acdc2, l_ratio=None, eps_data='zij'):
-    wl1 = 660
-    wl2 = 880
-
-    if eps_data == 'zij':
-        # zijlstra
-        # https://www.semanticscholar.org/paper/Absorption-spectra-of-human-fetal-and-adult-and-Zijlstra-Buursma/8ab210dc104c4330ad4b2c20882bca05be12760f
-        # Table 2. Mlllimoiar Absorptlvltles (L . mmor’ . cm’) of Four Hemoglobin Derivatives of HbF and HbA at Selected Wavelengths In the Visible and Near-Infrared Spectral Range 
-        eO1 = 0.08
-        eO2 = 0.28
-        eD1 = 0.81 
-        eD2 = 0.20
+def spo2_formula(R):
+    # wl1 = 660
+    # wl2 = 880
+    
+    # # prahl: https://omlc.org/spectra/hemoglobin/summary.html
+    # eO1 = 319.6
+    # eO2 = 1154.0
+    # eD1 = 3226.56
+    # eD2 = 726.44
         
-    elif eps_data == 'prahl':
-        # prahl: https://omlc.org/spectra/hemoglobin/summary.html
-        eO1 = 319.6
-        eO2 = 1154.0
-        eD1 = 3226.56
-        eD2 = 726.44
+    # # https://www.spiedigitallibrary.org/journals/journal-of-biomedical-optics/volume-23/issue-7/075005/Investigating-optical-path-and-differential-pathlength-factor-in-reflectance-photoplethysmography/10.1117/1.JBO.23.7.075005.pdf
+    # dpf1 = 7.487
+    # dpf2 = 5.337    
+    # l_ratio = dpf2 / dpf1 # 0.7128
     
-    else:
-        print("Error choosing extinction coefficients. 'zij' or 'prahl'.")
-
+    # a = eD1
+    # b = - l_ratio * eD2
+    # c = eD1 - eO1
+    # d = l_ratio * (eO2 - eD2)
     
-    if l_ratio is None:
-        # https://www.spiedigitallibrary.org/journals/journal-of-biomedical-optics/volume-23/issue-7/075005/Investigating-optical-path-and-differential-pathlength-factor-in-reflectance-photoplethysmography/10.1117/1.JBO.23.7.075005.pdf
-        # dpf for 6mm 660nm 880nm
-        dpf1 = 7.487
-        dpf2 = 5.337    
-        l_ratio = dpf2 / dpf1 # 0.7128
+    a = 3226.560000
+    b = -417.398752
+    c = 2952.348464
+    d = 392.777540
     
-    R = acdc1 / acdc2
-    a = eD1
-    b = - l_ratio * eD2
-    c = eD1 - eO1
-    d = l_ratio * (eO2 - eD2)
     spo2 = (a + b * R) / (c + d * R) * 100
     return spo2
 
-# # https://www.spiedigitallibrary.org/journals/journal-of-biomedical-optics/volume-23/issue-7/075005/Investigating-optical-path-and-differential-pathlength-factor-in-reflectance-photoplethysmography/10.1117/1.JBO.23.7.075005.pdf
-# def calculate_spo2(acdc1, acdc2, wl1=660, wl2=880, dpf1=7.487, dpf2=5.337):
 
-#     eO1, eO2, eD1, eD2 = get_extinction_coeff(wl1, wl2)
-#     R = acdc1 / acdc2
-#     a = eD1
-#     l_ratio = dpf2 / dpf1
-#     b = - l_ratio * eD2
-#     c = eD1 - eO1
-#     d = l_ratio * (eO2 - eD2)
-#     spo2 = (a + b * R) / (c + d * R) * 100
-#     return spo2
-
-# # https://omlc.org/spectra/hemoglobin/summary.html
-# def get_extinction_coeff(wl1, wl2):
-#     tsv_file = r"C:\BORING\RESEARCH\MEASUREMENTS\NEW DATA 2026\Prahl absorption coeffs\lambda Hb02 Hb.tsv"
-
-#     df = pd.read_csv(tsv_file, sep='\t')
-
-#     wavelengths = df['lambda'].to_numpy()
-#     hbO2 = df['Hb02'].to_numpy()
-#     hb = df['Hb'].to_numpy()
-
-#     # handles case where wl1 or wl2 is odd (we only have even wl data)
-#     eO1 = np.interp(wl1, wavelengths, hbO2)
-#     eO2 = np.interp(wl2, wavelengths, hbO2)
-
-#     eD1 = np.interp(wl1, wavelengths, hb)
-#     eD2 = np.interp(wl2, wavelengths, hb)
-
-#     # print(f'eO1 {eO1}')
-#     # print(f'eO2 {eO2}')
-#     # print(f'eD1 {eD1}')
-#     # print(f'eD2 {eD2}')
-
-#     return eO1, eO2, eD1, eD2
+def butter_ppg(ppg, fs, option='lowpass'):
+    order = 4 
+    fL = 0.5 
+    fH = 10 
+    sm_win = 50 
+    
+    if option == 'lowpass':
+        b, a = butter(order, fH, 'lowpass', fs=fs)
+    else:
+        b, a = butter(order, [fL, fH], 'bandpass', fs=fs)
+        
+    ppg_butter = filtfilt(b, a, ppg)
+    
+    if fs >= 75:
+        # moving average smoothing filter
+        win = round(fs * sm_win/1000)
+        B = 1 / win * np.ones(win)
+        ppg = filtfilt(B, 1, ppg_butter)
+    else:
+        ppg = ppg_butter
+        
+    return ppg
+    

@@ -31,3 +31,4 @@ class FilteredPacket:
 class SpO2Packet:
     t: float
     v: float
+    R: float 

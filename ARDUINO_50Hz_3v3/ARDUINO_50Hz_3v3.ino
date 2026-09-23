@@ -1,17 +1,18 @@
 const unsigned long BAUD = 115200; 
 
 // ---------- Pin definitions ----------
-const int RED_LED = 5; // yellow
-const int IR_LED  = 6; // green
+const int RED_LED = 3; // yellow
+const int IR_LED  = 2; // green
 
-const int TIA_PIN = A0;
+const int TIA_PIN = A3;
 
 uint32_t start_time = 0;
 
 // ---------- Timing ----------
-const unsigned long LED_PERIOD = 10000;    // 10ms+10ms = 20ms -> 1/20ms = 50Hz
-const unsigned long SETTLE_TIME = 5000;    // 5 ms
-// To bring ANALOG READ down to 3.3V: Rf = 150k ohms, Cf = 4700p -> 225Hz, 5*tau = 705us*5= 3.525ms
+// 200Hz
+const unsigned long LED_PERIOD = 5000;    // 10ms+10ms = 20ms -> 1/20ms = 50Hz // 25Hz
+const unsigned long SETTLE_TIME = 2000;    // 8 ms
+// 220k ohm, 4700pF, 5 tau = 5.17ms (this one 10/08/2026 2.36pm)
 
 int16_t dark = 0;
 unsigned long t0 = 0;
@@ -40,11 +41,11 @@ const char STOP_CMD  = 'q';
 void setup()
 {
     Serial.begin(BAUD);
-
     delay(1000);
+
     // need to connect AREF to 3.3V
     analogReference(EXTERNAL);
-
+    
     pinMode(RED_LED, OUTPUT);
     pinMode(IR_LED, OUTPUT);
 
@@ -105,7 +106,8 @@ void loop()
 
     unsigned long timestamp_red = micros() - start_time;
     
-    tia_red = analogRead(TIA_PIN) - dark;
+    tia_red = analogRead(TIA_PIN);
+    // tia_red = analogRead(TIA_PIN) - dark;
 
     while (micros() - t0 < LED_PERIOD);
     
@@ -122,7 +124,8 @@ void loop()
 
     unsigned long timestamp_ir = micros() - start_time;
 
-    tia_ir = analogRead(TIA_PIN) - dark;
+    tia_ir = analogRead(TIA_PIN);
+    // tia_ir = analogRead(TIA_PIN) - dark;
 
     while (micros() - t0 < LED_PERIOD);
 

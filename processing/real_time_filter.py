@@ -8,7 +8,7 @@ class RealTimeFilter:
 
     def __init__(self, mode, fs):
         order = 4
-        fL = 0.5
+        fL = 0.4
         fH = 10
         if mode == 'lowpass':
             fc = fH

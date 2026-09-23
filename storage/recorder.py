@@ -34,29 +34,28 @@ class Recorder:
     def _(self, packet: SpO2Packet):
         self.spo2_packets.append(packet)
 
-    def save(self, filepath, l_ratio, eps_data):
+    def save(self, filepath, save_spo2, save_raw):
         if not self.raw_packets:
-            print("No data was collected. Skipping CSV export.")
-            return False
-
-        raw_file = self.create_specialised_filepath(Path(filepath), 'raw')
-        filtered_file = self.create_specialised_filepath(Path(filepath), 'filtered')
-        
-        if l_ratio is None:
-            l_ratio = 0.7128
+            if not save_raw:
+                print("No data was collected. Skipping CSV export.")
+                return False
             
-        spo2_file = self.create_specialised_filepath(Path(filepath), f'spo2_{eps_data}_l2l1={str(l_ratio)}')
+            print("No raw packets to save.")
+            
+        spo2_df = None 
+        
+        if save_spo2: 
+            spo2_file = self.create_specialised_filepath(Path(filepath), f'spo2')
+            print(f"Saving {len(self.spo2_packets)} samples to {spo2_file}")
+            spo2_df = self.save_dataclass_list(spo2_file, self.spo2_packets)
+        
+        raw_df = None
 
-        print(f"Saving {len(self.raw_packets)} samples to {raw_file}...")
-        self.save_dataclass_list(raw_file, self.raw_packets)
+        if save_raw:
+            raw_file = self.create_specialised_filepath(Path(filepath), "")            
+            print(f"Saving {len(self.raw_packets)} samples to {raw_file}")
+            raw_df = self.save_dataclass_list(raw_file, self.raw_packets)
 
-        print(f"Saving {len(self.filtered_packets)} samples to {filtered_file}...")
-        self.save_dataclass_list(filtered_file, self.filtered_packets)
-
-        print(f"Saving {len(self.spo2_packets)} samples to {spo2_file}...")
-        self.save_dataclass_list(spo2_file, self.spo2_packets)
-
-        if self.raw_packets:
             t0 = self.raw_packets[0].time_red_us
             t1 = self.raw_packets[-1].time_red_us
 
@@ -64,16 +63,21 @@ class Recorder:
 
             print("Total duration (s):", duration)
             print("Effective rate (Hz):", len(self.raw_packets) / duration)
-
-        return True
+            
+        return raw_df, spo2_df
 
     @staticmethod
     def save_dataclass_list(filename, data):
         df = pd.DataFrame(asdict(x) for x in data)
         df.to_csv(filename, index=False)
+        return df
 
     @staticmethod
     def create_specialised_filepath(filepath, string):
-        new_stem = filepath.stem + '_' + string
+        if string:
+            new_stem = filepath.stem + '_' + string
+        else: 
+            new_stem = filepath.stem
+            
         new_filepath = filepath.parent / new_stem
         return new_filepath.with_suffix('.csv')
