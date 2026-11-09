@@ -1,42 +1,23 @@
 from scipy.signal import butter, lfilter, lfilter_zi
+from collections import deque
 import numpy as np
 
+# only used for plotting. not used for processing. 
+# just a MOVING AVERAGE FILTER
+
 class RealTimeFilter:
-    b: np.ndarray
-    a: np.ndarray
-    zi: np.ndarray  # initial state of filter
 
-    def __init__(self, mode, fs):
-        order = 4
-        fL = 0.4
-        fH = 10
-        if mode == 'lowpass':
-            fc = fH
-        else:
-            fc = (fL, fH)
+    def __init__(self, fs, window_ms=50):
 
-        self.b, self.a = butter(
-            N=order,
-            Wn=fc,
-            btype=mode,
-            fs=fs,
-        )
-        self.reset()
+        window_samples = round(fs * window_ms / 1000)
+
+        self.buffer = deque(maxlen=window_samples)
 
     def reset(self):
-        self.zi = None
+        self.buffer.clear()
 
     def update(self, sample):
 
-        if self.zi is None:
-            # Initialize as if the input had always been 'sample'
-            self.zi = lfilter_zi(self.b, self.a) * sample
+        self.buffer.append(sample)
 
-        y, self.zi = lfilter(
-            self.b,
-            self.a,
-            [sample],
-            zi=self.zi,
-        )
-
-        return float(y[0])
+        return np.mean(self.buffer)

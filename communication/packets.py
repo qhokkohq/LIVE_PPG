@@ -19,16 +19,18 @@ class DataPacket:
 @dataclass(slots=True)
 class FilteredPacket:
     t_red: float
-    red_full: float
-    red_ac: float
-
+    red: float
     t_ir: float
-    ir_full: float
-    ir_ac: float
-
+    ir: float
 
 @dataclass(slots=True)
 class SpO2Packet:
     t: float
     v: float
     R: float 
+    
+@dataclass(slots=True)
+class BPPacket:
+    t: float
+    sbp: float
+    dbp: float

@@ -11,6 +11,7 @@ from processing.analysis import analyse_ppg, spo2_formula
 from communication.packets import DataPacket
 from utils.utils import clean_raw_arduino_df
 
+fs = 50
 
 def live_process_csv(csv_path, fs=fs):
     """Run a raw CSV through the real-time processing pipeline."""
@@ -37,8 +38,6 @@ def live_process_csv(csv_path, fs=fs):
         if filtered is None:
             continue
 
-        recorder.append(filtered)
-
         result = estimator.update(packet)
 
         if result is None:
@@ -49,7 +48,7 @@ def live_process_csv(csv_path, fs=fs):
         if curr_spo2_packet is not None:
             recorder.append(curr_spo2_packet)
 
-    _, spo2_df = recorder.save(csv_path, save_raw=False)
+    _, spo2_df = recorder.save(csv_path, save_spo2=True, save_bp=False, save_raw=False)
 
     return raw_df, spo2_df
 
@@ -139,9 +138,6 @@ def align_data(raw_df, spo2_df, buzud_df):
 
     return raw_df, spo2_df, buzud_df
 
-
-
-
 def save_clean_csv(folder, raw_df, spo2_df, buzud_df=None):
     """Save processed data."""
 
@@ -196,17 +192,15 @@ def plot_measurement(data_folder, fs, raw_df, spo2_df, buzud_df=None):
 
     fig.tight_layout()
 
-    fig.savefig(data_folder / f"{data_folder.stem}.png")
-
     return fig
 
 
 def main():
-    WITH_BUZUD = True
-    DATA_MODE = "cleaned"       # "cleaned" or "raw"
+    WITH_BUZUD = False
+    DATA_MODE = "raw"       # "cleaned" or "raw"
 
-    big_folder = Path(r"C:\BORING\RESEARCH\MEASUREMENTS\NEW DATA 2026\LIVE_PPG\RAW_DATA_AUG_04_11_BREATHHOLD")
-    fs = 50
+    big_folder = Path(r"C:\BORING\RESEARCH\MEASUREMENTS\NEW DATA 2026\SPO2 CALIBRATION\RAW_DATA_AUG_04_11_NORMAL")
+    fs = 100
 
     for data_folder in big_folder.iterdir():
 
@@ -214,13 +208,15 @@ def main():
             continue
 
         raw_df, spo2_df, buzud_df = load_data(data_folder, fs=fs, mode=DATA_MODE, with_buzud=WITH_BUZUD)
-
+        
         if WITH_BUZUD:
             raw_df, spo2_df, buzud_df = align_data(raw_df, spo2_df, buzud_df)
 
-        save_clean_csv(data_folder, raw_df, spo2_df, buzud_df)
+        # save_clean_csv(data_folder, raw_df, spo2_df, buzud_df)
 
-        plot_measurement(data_folder, fs, raw_df, spo2_df, buzud_df)
+        fig = plot_measurement(data_folder, fs, raw_df, spo2_df, buzud_df)
+        # fig.savefig(data_folder / f"{data_folder.stem}.png")
+
 
     plt.show()
 

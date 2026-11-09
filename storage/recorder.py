@@ -3,19 +3,19 @@ import pandas as pd
 from dataclasses import asdict
 from functools import singledispatchmethod
 
-from communication.packets import DataPacket, FilteredPacket, SpO2Packet
+from communication.packets import DataPacket, BPPacket, SpO2Packet
 
 
 class Recorder:
 
     def __init__(self):
         self.raw_packets: list[DataPacket] = []
-        self.filtered_packets: list[FilteredPacket] = []
+        self.bp_packets: list[BPPacket] = []
         self.spo2_packets: list[SpO2Packet] = []
 
     def clear(self):
         self.raw_packets.clear()
-        self.filtered_packets.clear()
+        self.bp_packets.clear()
         self.spo2_packets.clear()
 
     @singledispatchmethod
@@ -27,14 +27,14 @@ class Recorder:
         self.raw_packets.append(packet)
 
     @append.register
-    def _(self, packet: FilteredPacket):
-        self.filtered_packets.append(packet)
+    def _(self, packet: BPPacket):
+        self.bp_packets.append(packet)
 
     @append.register
     def _(self, packet: SpO2Packet):
         self.spo2_packets.append(packet)
 
-    def save(self, filepath, save_spo2, save_raw):
+    def save(self, filepath, save_spo2, save_bp, save_raw):
         if not self.raw_packets:
             if not save_raw:
                 print("No data was collected. Skipping CSV export.")
@@ -42,10 +42,17 @@ class Recorder:
             
             print("No raw packets to save.")
             
+        bp_df = None
+            
+        if save_bp and self.bp_packets:
+            bp_file = self.create_specialised_filepath(Path(filepath), "bp")
+            print(f"Saving {len(self.bp_packets)} BP estimates to {bp_file}")
+            bp_df = self.save_dataclass_list(bp_file, self.bp_packets)
+            
         spo2_df = None 
         
-        if save_spo2: 
-            spo2_file = self.create_specialised_filepath(Path(filepath), f'spo2')
+        if save_spo2 and self.spo2_packets: 
+            spo2_file = self.create_specialised_filepath(Path(filepath), 'spo2')
             print(f"Saving {len(self.spo2_packets)} samples to {spo2_file}")
             spo2_df = self.save_dataclass_list(spo2_file, self.spo2_packets)
         

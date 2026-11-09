@@ -31,24 +31,16 @@ class LiveData:
         return [p.t_red for p in self.filtered_packets]
 
     @property
-    def red_full(self):
-        return [p.red_full for p in self.filtered_packets]
-
-    @property
-    def red_ac(self):
-        return [p.red_ac for p in self.filtered_packets]
+    def red(self):
+        return [p.red for p in self.filtered_packets]
 
     @property
     def t_ir(self):
         return [p.t_ir for p in self.filtered_packets]
 
     @property
-    def ir_full(self):
-        return [p.ir_full for p in self.filtered_packets]
-
-    @property
-    def ir_ac(self):
-        return [p.ir_ac for p in self.filtered_packets]
+    def ir(self):
+        return [p.ir for p in self.filtered_packets]
 
     @property
     def spo2_t(self):

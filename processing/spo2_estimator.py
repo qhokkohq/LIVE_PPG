@@ -7,6 +7,7 @@ from processing.analysis import analyse_ppg, spo2_formula
 class SpO2Estimator:
     """
     Real-time SpO2 estimator.
+    DOES ITS OWN FILTERING, TAKES IN RAW DATA
 
     - Accepts one RAW Red/IR sample at a time.
     - Every second, analyses the previous 8 seconds.
@@ -104,6 +105,8 @@ class SpO2Estimator:
         t_red -= t_red[0]
         t_ir -= t_ir[0]
         
+        # does its own filtering
+        # signal_data, peak_data, valley_data, interp_data, acdc_data, "ppg"
         red_ppg = analyse_ppg(t_red, red, self.fs)
         
         if red_ppg is None:

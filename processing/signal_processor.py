@@ -1,24 +1,17 @@
 from processing.real_time_filter import RealTimeFilter
 from communication.packets import DataPacket, FilteredPacket
 
-
 class SignalProcessor:
 
     def __init__(self, fs):
-        self.red_full = RealTimeFilter(mode="lowpass", fs=fs)
-        self.red_ac = RealTimeFilter(mode="bandpass", fs=fs)
-
-        self.ir_full = RealTimeFilter(mode="lowpass", fs=fs)
-        self.ir_ac = RealTimeFilter(mode="bandpass", fs=fs)
+        self.red = RealTimeFilter(fs=fs)        
+        self.ir = RealTimeFilter(fs=fs)
 
         self.session_start_timestamp = None
 
     def reset(self):
-        self.red_full.reset()
-        self.red_ac.reset()
-
-        self.ir_full.reset()
-        self.ir_ac.reset()
+        self.red.reset()
+        self.ir.reset()
 
         self.session_start_timestamp = None
 
@@ -31,10 +24,8 @@ class SignalProcessor:
 
         return FilteredPacket(
             t_red=t_red,
-            red_full=self.red_full.update(packet.red),
-            red_ac=self.red_ac.update(packet.red),
+            red=self.red.update(packet.red),
 
             t_ir=t_ir,
-            ir_full=self.ir_full.update(packet.ir),
-            ir_ac=self.ir_ac.update(packet.ir),
+            ir=self.ir.update(packet.ir),
         )
